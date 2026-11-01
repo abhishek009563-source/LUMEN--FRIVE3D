@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LumenDrive 3D | Vehicle Headlight Control Simulator</title>
+  
+  <!-- Google Fonts: Orbitron (Futuristic HUD), Rajdhani (Tech Gauges), Inter (Clean UI) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Rajdhani:wght@500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Font Awesome 6 Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  
+  <!-- Custom Modern Automotive SaaS Stylesheet -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="automotive-theme">
+
+  <!-- Main HUD Application Layout -->
+  <div class="hud-container">
+
+    <!-- Top Navigation & Environment Command Bar -->
+    <header class="hud-header glass-panel">
+      <div class="header-brand">
+        <div class="brand-badge">
+          <i class="fa-solid fa-car-rear brand-icon"></i>
+          <span class="pulse-ring"></span>
+        </div>
+        <div class="brand-text">
+          <div class="brand-title">LUMEN-DRIVE <span class="highlight-cyan">3D</span></div>
+          <div class="brand-sub">AUTOMOTIVE HEADLIGHT CONTROL UNIT * C CORE</div>
+        </div>
+      </div>
+
+      <!-- Environment Mode Switcher -->
+      <div class="env-switcher">
+        <span class="env-label"><i class="fa-solid fa-mountain-sun"></i> ENVIRONMENT:</span>
+        <div class="env-buttons">
+          <button class="env-btn" data-env="DAYTIME" title="Daytime (Bright Sunlight)">
+            <i class="fa-solid fa-sun"></i> <span>Day</span>
+          </button>
+          <button class="env-btn" data-env="EVENING" title="Evening / Twilight">
+            <i class="fa-solid fa-cloud-sun"></i> <span>Dusk</span>
+          </button>
+          <button class="env-btn active" data-env="NIGHT" title="Night (Showroom Dark)">
+            <i class="fa-solid fa-moon"></i> <span>Night</span>
+          </button>
+          <button class="env-btn" data-env="DARK_HIGHWAY" title="Dark Highway (Pitch Black Road)">
+            <i class="fa-solid fa-road"></i> <span>Highway</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- System Connectivity & Quick Actions -->
+      <div class="header-status">
+        <div class="c-badge" title="Mongoose C Server Active">
+          <span class="status-dot pulsing"></span>
+          <span class="c-badge-text">C99 ENGINE: ONLINE</span>
+        </div>
+        <button id="btn-reset-view" class="icon-btn" title="Reset 3D Camera">
+          <i class="fa-solid fa-camera-rotate"></i>
+        </button>
+        <button id="btn-toggle-hud" class="icon-btn" title="Toggle Compact HUD Mode">
+          <i class="fa-solid fa-expand"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Workspace: 3D Viewport with Overlaid Automotive Panels -->
+    <main class="viewport-workspace">
+
+      <!-- WebGL Three.js Container -->
+      <div id="three-canvas-container" class="three-container">
+        <!-- Interactive 3D Canvas injected here by Three.js -->
+        
+        <!-- Camera Presets Floating Toolbar -->
+        <div class="camera-toolbar glass-panel">
+          <span class="toolbar-title"><i class="fa-solid fa-video"></i> CAMERA POV</span>
+          <div class="cam-preset-group">
+            <button class="cam-btn active" data-view="front" title="Front Perspective">
+              <i class="fa-solid fa-bullseye"></i> Front
+            </button>
+            <button class="cam-btn" data-view="perspective" title="3/4 Isometric Perspective">
+              <i class="fa-solid fa-cube"></i> 3/4 View
+            </button>
+            <button class="cam-btn" data-view="closeup" title="Headlights Lens Detail">
+              <i class="fa-solid fa-magnifying-glass"></i> Lens Macro
+            </button>
+            <button class="cam-btn" data-view="cockpit" title="Driver Cockpit Perspective">
+              <i class="fa-solid fa-gauge"></i> Cockpit
+            </button>
+            <button class="cam-btn" data-view="side" title="Side Profile">
+              <i class="fa-solid fa-arrows-left-right"></i> Side
+            </button>
+            <button class="cam-btn" data-view="top" title="Top-Down Plan View">
+              <i class="fa-solid fa-arrow-down"></i> Top
+            </button>
+          </div>
+        </div>
+
+        <!-- Overlaid Real-Time State Hologram Badge -->
+        <div class="state-hologram glass-panel">
+          <div class="hologram-mode" id="holo-mode-text">LOW BEAM ENGAGED</div>
+          <div class="hologram-meta">
+            <span id="holo-range-text"><i class="fa-solid fa-arrows-left-right-to-line"></i> 48m Range</span>
+            <span class="separator">|</span>
+            <span id="holo-temp-text"><i class="fa-solid fa-temperature-half"></i> 6000K Xenon</span>
+          </div>
+        </div>
+
+        <!-- Flashing Indicator Screen Overlays -->
+        <div id="screen-blinker-left" class="screen-blinker left">
+          <i class="fa-solid fa-chevron-left"></i>
+        </div>
+        <div id="screen-blinker-right" class="screen-blinker right">
+          <i class="fa-solid fa-chevron-right"></i>
+        </div>
+      </div>
+
+      <!-- Left Floating Panel: Advanced Digital Instrument Cluster & Telemetry -->
+      <aside class="panel-left glass-panel" id="dashboard-panel">
+        <div class="panel-title-bar">
+          <span class="panel-tag"><i class="fa-solid fa-microchip"></i> INSTRUMENT CLUSTER</span>
+          <span class="badge-mini" id="cluster-mode-tag">AUTO ACTIVE</span>
+        </div>
+
+        <!-- Telltale Indicator Symbols Bar -->
+        <div class="telltale-bar">
+          <div class="telltale-icon" id="tell-left" title="Left Indicator">
+            <i class="fa-solid fa-arrow-left"></i>
+          </div>
+          <div class="telltale-icon" id="tell-parking" title="Parking / DRL Lights">
+            <i class="fa-solid fa-lightbulb"></i>
+          </div>
+          <div class="telltale-icon" id="tell-lowbeam" title="Low Beam Headlights">
+            <i class="fa-solid fa-low-vision"></i>
+          </div>
+          <div class="telltale-icon high-beam-blue" id="tell-highbeam" title="High Beam (Main)">
+            <i class="fa-solid fa-sun"></i>
+          </div>
+          <div class="telltale-icon hazard-red" id="tell-hazard" title="Emergency Hazard">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+          </div>
+          <div class="telltale-icon auto-cyan" id="tell-auto" title="Automatic Sensor System">
+            <i class="fa-solid fa-robot"></i>
+          </div>
+          <div class="telltale-icon" id="tell-right" title="Right Indicator">
+            <i class="fa-solid fa-arrow-right"></i>
+          </div>
+        </div>
+
+        <!-- Speedometer & Battery Dial Gauges -->
+        <div class="gauges-grid">
+          <!-- Digital Speedometer Gauge -->
+          <div class="gauge-card">
+            <div class="circular-meter">
+              <svg viewBox="0 0 100 100" class="gauge-svg">
+                <circle class="meter-bg" cx="50" cy="50" r="42" />
+                <circle class="meter-fill" id="speed-meter-fill" cx="50" cy="50" r="42" stroke-dasharray="264" stroke-dashoffset="130" />
+              </svg>
+              <div class="gauge-value-box">
+                <span class="gauge-number" id="val-speed">48</span>
+                <span class="gauge-unit">KM/H</span>
+              </div>
+            </div>
+            <div class="gauge-caption"><i class="fa-solid fa-gauge-high"></i> VEHICLE SPEED</div>
+          </div>
+
+          <!-- Battery Voltage Gauge -->
+          <div class="gauge-card">
+            <div class="circular-meter">
+              <svg viewBox="0 0 100 100" class="gauge-svg">
+                <circle class="meter-bg" cx="50" cy="50" r="42" />
+                <circle class="meter-fill meter-battery" id="battery-meter-fill" cx="50" cy="50" r="42" stroke-dasharray="264" stroke-dashoffset="60" />
+              </svg>
+              <div class="gauge-value-box">
+                <span class="gauge-number" id="val-battery">14.2</span>
+                <span class="gauge-unit">VOLTS</span>
+              </div>
+            </div>
+            <div class="gauge-caption"><i class="fa-solid fa-car-battery"></i> ALTERNATOR BUS</div>
+          </div>
+        </div>
+
+        <!-- Ambient Light Sensor (ALS) Dynamic Telemetry -->
+        <div class="sensor-section">
+          <div class="section-header">
+            <span><i class="fa-solid fa-bolt"></i> AMBIENT LIGHT SENSOR (ALS)</span>
+            <span class="sensor-status-badge" id="als-status-badge">NIGHT COND.</span>
+          </div>
+
+          <div class="als-meter-container">
+            <div class="als-track">
+              <div class="als-fill" id="als-fill-bar" style="width: 25%;"></div>
+              <div class="als-marker" id="als-threshold-marker" style="left: 35%;" title="Threshold: 35%">
+                <span class="marker-tag">TH: 35%</span>
+              </div>
+            </div>
+            <div class="als-readouts">
+              <span>0% DARK</span>
+              <span class="current-lux-text" id="val-als-percent">25.0% (Night)</span>
+              <span>100% DAY</span>
+            </div>
+          </div>
+
+          <div class="sensor-decision-card" id="sensor-decision-box">
+            <div class="decision-icon"><i class="fa-solid fa-shield-halved"></i></div>
+            <div class="decision-details">
+              <div class="decision-title" id="val-decision-title">AUTOMATIC ILLUMINATION</div>
+              <div class="decision-desc" id="val-decision-desc">Ambient light below 35.0% threshold. Low beams engaged by C controller.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Optical Telemetry KPI Row -->
+        <div class="optical-kpi-row">
+          <div class="kpi-mini">
+            <div class="kpi-label">DRL EMISSION</div>
+            <div class="kpi-val" id="val-drl-kpi">100%</div>
+          </div>
+          <div class="kpi-mini">
+            <div class="kpi-label">BEAM THROW</div>
+            <div class="kpi-val" id="val-range-kpi">48 m</div>
+          </div>
+          <div class="kpi-mini">
+            <div class="kpi-label">CONE VISIBILITY</div>
+            <div class="kpi-val highlight" id="val-cone-kpi">ACTIVE</div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Right Floating Panel: Headlight & Vehicle Control Center -->
+      <aside class="panel-right glass-panel" id="controls-panel">
+        <div class="panel-title-bar">
+          <span class="panel-tag"><i class="fa-solid fa-sliders"></i> LIGHTING CONTROLS</span>
+          <div class="power-switch-wrap">
+            <span class="power-label">POWER</span>
+            <button id="btn-master-power" class="power-btn active" title="Master Lighting Power">
+              <i class="fa-solid fa-power-off"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Primary Headlight Mode Selector -->
+        <div class="control-group">
+          <label class="control-label"><i class="fa-solid fa-lightbulb"></i> HEADLIGHT BEAM SELECTION</label>
+          <div class="beam-selector-grid">
+            <button class="mode-btn" data-mode="OFF">
+              <i class="fa-solid fa-ban"></i>
+              <span>OFF</span>
+            </button>
+            <button class="mode-btn" data-mode="PARKING">
+              <i class="fa-regular fa-eye"></i>
+              <span>PARKING</span>
+            </button>
+            <button class="mode-btn active" data-mode="LOW_BEAM">
+              <i class="fa-solid fa-low-vision"></i>
+              <span>LOW BEAM</span>
+            </button>
+            <button class="mode-btn" data-mode="HIGH_BEAM">
+              <i class="fa-solid fa-sun"></i>
+              <span>HIGH BEAM</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Automatic Mode Controller & ALS Sliders -->
+        <div class="control-group">
+          <div class="switch-row">
+            <label class="control-label mb-0"><i class="fa-solid fa-wand-magic-sparkles"></i> AUTOMATIC ALS CONTROL</label>
+            <label class="toggle-switch">
+              <input type="checkbox" id="toggle-auto-mode" checked>
+              <span class="slider-toggle"></span>
+            </label>
+          </div>
+          <p class="control-caption">C backend automatically toggles low beams when ambient illumination drops below threshold.</p>
+
+          <!-- Interactive Ambient Light Slider -->
+          <div class="slider-control-box">
+            <div class="slider-label-row">
+              <span>Simulated Light Intensity:</span>
+              <span class="slider-val-readout" id="slider-lux-val">25%</span>
+            </div>
+            <input type="range" id="input-ambient-lux" min="0" max="100" value="25" class="custom-range">
+            <div class="slider-ticks">
+              <span>0% Pitch Black</span>
+              <span>50% Dusk</span>
+              <span>100% Direct Sun</span>
+            </div>
+          </div>
+
+          <!-- Configurable Auto Threshold Slider -->
+          <div class="slider-control-box mt-3">
+            <div class="slider-label-row">
+              <span>Auto-Activation Threshold:</span>
+              <span class="slider-val-readout cyan" id="slider-threshold-val">35%</span>
+            </div>
+            <input type="range" id="input-threshold" min="10" max="80" value="35" class="custom-range">
+          </div>
+        </div>
+
+        <!-- Dynamic Indicator & Hazard Controls -->
+        <div class="control-group">
+          <label class="control-label"><i class="fa-solid fa-arrows-turn-to-dots"></i> TURN SIGNALS & HAZARDS</label>
+          <div class="indicator-buttons-grid">
+            <button id="btn-ind-left" class="indicator-btn" title="Left Turn Signal">
+              <i class="fa-solid fa-chevron-left"></i>
+              <span>LEFT</span>
+            </button>
+            <button id="btn-ind-hazard" class="indicator-btn hazard" title="Hazard Flasher">
+              <i class="fa-solid fa-triangle-exclamation"></i>
+              <span>HAZARD</span>
+            </button>
+            <button id="btn-ind-right" class="indicator-btn" title="Right Turn Signal">
+              <span>RIGHT</span>
+              <i class="fa-solid fa-chevron-right"></i>
+            </button>
+          </div>
+          <button id="btn-ind-cancel" class="cancel-signals-btn">
+            <i class="fa-solid fa-xmark"></i> CANCEL ALL SIGNALS
+          </button>
+        </div>
+
+        <!-- Quick Keyboard Shortcuts Reference -->
+        <div class="shortcuts-guide">
+          <span class="shortcuts-title"><i class="fa-solid fa-keyboard"></i> KEYBOARD COMMANDS:</span>
+          <div class="keys-grid">
+            <span><kbd>L</kbd> Low Beam</span>
+            <span><kbd>H</kbd> High Beam</span>
+            <span><kbd>P</kbd> Parking</span>
+            <span><kbd>A</kbd> Auto Mode</span>
+            <span><kbd>←</kbd> / <kbd>→</kbd> Signals</span>
+            <span><kbd>Space</kbd> Hazard</span>
+          </div>
+        </div>
+      </aside>
+
+    </main>
+
+    <!-- Bottom Drawer: C Backend Autonomous Decision & Audit Log -->
+    <footer class="hud-footer glass-panel" id="history-drawer">
+      <div class="drawer-header" id="drawer-toggle">
+        <div class="drawer-title">
+          <i class="fa-solid fa-terminal"></i>
+          <span>SQLITE AUDIT TRAIL & C DECISION LOGS</span>
+          <span class="log-count-pill" id="log-count-badge">5 Events</span>
+        </div>
+        <button class="drawer-collapse-btn" id="btn-drawer-collapse">
+          <i class="fa-solid fa-chevron-up" id="drawer-chevron"></i>
+        </button>
+      </div>
+
+      <!-- Events Scroll Container -->
+      <div class="drawer-body" id="drawer-content">
+        <div class="table-responsive">
+          <table class="audit-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>TIMESTAMP</th>
+                <th>SOURCE</th>
+                <th>ACTION</th>
+                <th>DETAILS & C DECISION REASONING</th>
+                <th>AMBIENT LUX</th>
+                <th>LIGHT STATE</th>
+              </tr>
+            </thead>
+            <tbody id="audit-table-body">
+              <!-- Dynamically populated from /api/history -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </footer>
+
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- Three.js (r128) + OrbitControls via CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+  <!-- Modular Application Scripts -->
+  <script src="three-scene.js"></script>
+  <script src="dashboard.js"></script>
+  <script src="controls.js"></script>
+  <script src="script.js"></script>
+
+</body>
+</html>
+

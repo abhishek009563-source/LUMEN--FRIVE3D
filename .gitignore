@@ -1,0 +1,15 @@
+# Binaries and Object files
+*.o
+*.obj
+backend/*.exe
+*.exe
+
+# Database files
+database/*.db
+database/*.db-wal
+database/*.db-shm
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
