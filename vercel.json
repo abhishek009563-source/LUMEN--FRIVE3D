@@ -1,0 +1,13 @@
+{
+  "version": 2,
+  "rewrites": [
+    { "source": "/", "destination": "/frontend/index.html" },
+    { "source": "/style.css", "destination": "/frontend/style.css" },
+    { "source": "/script.js", "destination": "/frontend/script.js" },
+    { "source": "/three-scene.js", "destination": "/frontend/three-scene.js" },
+    { "source": "/dashboard.js", "destination": "/frontend/dashboard.js" },
+    { "source": "/controls.js", "destination": "/frontend/controls.js" },
+    { "source": "/assets/(.*)", "destination": "/frontend/assets/$1" },
+    { "source": "/((?!frontend/).*)", "destination": "/frontend/$1" }
+  ]
+}

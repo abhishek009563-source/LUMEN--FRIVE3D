@@ -12,6 +12,7 @@
   };
 
   let isPolling = false;
+  let isCloudActive = false;
   let lastKnownState = null;
 
   document.addEventListener('DOMContentLoaded', () => {
@@ -37,9 +38,29 @@
       if (resp.ok) {
         const state = await resp.json();
         onStateUpdated(state);
+        return;
       }
     } catch (e) {
-      console.warn('[INIT] Waiting for C backend on port 8001...', e);
+      // Local C backend offline / running on static cloud host (Vercel)
+    }
+
+    // Fallback: Standalone Cloud ECU Simulation
+    activateCloudSimulationMode();
+  }
+
+  function activateCloudSimulationMode() {
+    isCloudActive = true;
+    if (window.AutomotiveControls) {
+      const simulated = window.AutomotiveControls.getSimulatedState();
+      onStateUpdated(simulated);
+    }
+    const badgeText = document.querySelector('.c-badge-text');
+    const badge = document.querySelector('.c-badge');
+    if (badgeText && badge) {
+      badgeText.textContent = 'CLOUD ECU: ACTIVE';
+      badge.style.borderColor = 'rgba(0, 240, 255, 0.4)';
+      badge.style.background = 'rgba(0, 240, 255, 0.12)';
+      badge.style.color = 'var(--accent-cyan)';
     }
   }
 
@@ -47,17 +68,30 @@
     setInterval(async () => {
       if (isPolling) return;
       isPolling = true;
-      try {
-        const resp = await fetch('/api/status');
-        if (resp.ok) {
-          const state = await resp.json();
-          onStateUpdated(state);
+
+      if (!isCloudActive) {
+        try {
+          const resp = await fetch('/api/status');
+          if (resp.ok) {
+            const state = await resp.json();
+            onStateUpdated(state);
+            isPolling = false;
+            return;
+          } else if (resp.status === 404) {
+            activateCloudSimulationMode();
+          }
+        } catch (err) {
+          activateCloudSimulationMode();
         }
-      } catch (err) {
-        // Server might be restarting
-      } finally {
-        isPolling = false;
       }
+
+      // If in Cloud Mode, execute autonomous simulation tick locally
+      if (isCloudActive && window.AutomotiveControls) {
+        const tickState = window.AutomotiveControls.runCloudSimulationTick();
+        onStateUpdated(tickState);
+      }
+
+      isPolling = false;
     }, 750); // High responsiveness
   }
 
@@ -170,4 +204,3 @@
   }
 
 })();
-
